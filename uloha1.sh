@@ -7,14 +7,17 @@
 ##PBS -l gpu=1
 #trap 'clean_scratch' TERM EXIT
 
-DATADIR="/storage/plzen1/home/mjirik/metalisa" # sdilene pres NFSv4
+# data sdilene pres NFSv4
+# /storage/plzen1/home/$USER
+DATADIR="$HOME/data/medical/processed/metalisa" 
+
 module add python-2.7.6-gcc
 module add cuda-7.5
 
 # cd /storage/plzen1/home/tkolar/ Nahradit svým adresářem
-cd /storage/plzen1/home/mjirik/
+cd /storage/plzen1/home/$USER/projects/metalisa
 
-DIR=./keras_104
+DIR=$HOME/keras_104
 export PYTHONPATH=$PYTHONPATH:$DIR/virtualenv/software/python-2.7.6/gcc/lib/python2.7/site-packages
 source $DIR/keras-1.0.4/bin/activate
 
@@ -22,17 +25,14 @@ PYTHONUSERBASE=$DIR/keras-1.0.4/
 export PATH=$PYTHONUSERBASE/bin:$PATH
 export PYTHONPATH=$PYTHONUSERBASE/lib/python2.7/site-packages:$PYTHONPATH
 
-#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/auto/plzen1/home/mhlavac/metacentrum/cuDNNv4
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/storage/plzen1/home/mhlavac/keras_104/src
-#export LIBRARY_PATH=/auto/plzen1/home/mhlavac/metacentrum/cuDNNv4:$LD_LIBRARY_PATH
-#export CPATH=/auto/plzen1/home/mhlavac/metacentrum/cuDNNv4:$CPATH
 
 #cp $DATADIR/train.hdf5 $SCRATCHDIR  || exit 1
 #cp $DATADIR/test.hdf5 $SCRATCHDIR  || exit 1
 #cp $DATADIR/ker74.py $SCRATCHDIR   ||exit 1
 #cd $SCRATCHDIR || exit 2
 cd metalisa
-python ker74.py >log.txt
+python slice_classification_cnn.py >log.txt
  
 #cp vystup.txt $DATADIR 
 #cp vahy74.hdf5 $DATADIR 

@@ -3,6 +3,8 @@ from keras.layers import Dense, Activation, Convolution2D, MaxPooling2D, Flatten
 from keras.preprocessing.image import ImageDataGenerator
 import numpy as np
 import h5py
+import argparse
+import os.path as op
 
 def nacteni(soubor):
     a = list()
@@ -58,9 +60,17 @@ def test_picture(soubor):
 
 
 def main():
-    testl, testd = nacteni('test.hdf5')
-    trainl, traind = nacteni('train.hdf5')
-    td = test_picture('test.hdf5')
+    parser = argparse.ArgumentParser(description='CNN training')
+    parser.add_argument('-i', 'input-data', type=str,
+                    help='input data')
+    args = parser.parse_args()
+    args.input_data = os.path.expanduser(args.input_data)
+
+    testfile = op.join(args.input_data, 'test.hdf5')
+    trainfile = op.join(args.input_data, 'train.hdf5')
+    testl, testd = nacteni(testfile)
+    trainl, traind = nacteni(trainfile)
+    td = test_picture(testfile)
     seed = 7
     np.random.seed(seed)
 

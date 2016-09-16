@@ -31,8 +31,8 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/storage/plzen1/home/mhlavac/keras_104/s
 #cp $DATADIR/test.hdf5 $SCRATCHDIR  || exit 1
 #cp $DATADIR/ker74.py $SCRATCHDIR   ||exit 1
 #cd $SCRATCHDIR || exit 2
-cd metalisa
-python slice_classification_cnn.py >log.txt
+
+python slice_classification_cnn.py -i $DATADIR -o ./ >log.txt
  
 #cp vystup.txt $DATADIR 
 #cp vahy74.hdf5 $DATADIR 

@@ -61,13 +61,21 @@ def test_picture(soubor):
 
 def main():
     parser = argparse.ArgumentParser(description='CNN training')
-    parser.add_argument('-i', 'input-data', type=str,
+    parser.add_argument('-i', '--input-data-dir', type=str,
+                    help='input data')
+    parser.add_argument('-o', '--output-data-dir', type=str,
                     help='input data')
     args = parser.parse_args()
-    args.input_data = os.path.expanduser(args.input_data)
 
-    testfile = op.join(args.input_data, 'test.hdf5')
-    trainfile = op.join(args.input_data, 'train.hdf5')
+    args.input_data_dir = op.expanduser(args.input_data_dir)
+    args.output_data_dir = op.expanduser(args.output_data_dir)
+
+    testfile = op.join(args.input_data_dir, 'test.hdf5')
+    trainfile = op.join(args.input_data_dir, 'train.hdf5')
+    outputfile = op.join(args.output_data_dir, 'vahy.hdf5')
+
+
+
     testl, testd = nacteni(testfile)
     trainl, traind = nacteni(trainfile)
     td = test_picture(testfile)
@@ -118,7 +126,7 @@ def main():
     # model_json = model.to_json()
     # with open('model.json', 'w') as json_file:
     #     json_file.write(model_json)
-    model.save_weights('vahy74.hdf5')
+    model.save_weights(args.outputfile)
     #with open('vysledek74.txt', 'w') as f:
     #    f.write("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
     #	f.close()

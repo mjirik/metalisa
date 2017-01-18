@@ -9,7 +9,8 @@
 
 # data sdilene pres NFSv4
 # /storage/plzen1/home/$USER
-DATADIR="$HOME/data/medical/processed/metalisa" 
+
+DATADIR="$HOME/data/medical/processed/metalisa/resolution40" 
 
 module add python-2.7.6-gcc
 module add cuda-7.5
@@ -32,7 +33,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/storage/plzen1/home/mhlavac/keras_104/s
 #cp $DATADIR/ker74.py $SCRATCHDIR   ||exit 1
 #cd $SCRATCHDIR || exit 2
 
-python slice_classification_cnn.py -i $DATADIR -o ./ >log.txt
+python slice_classification_cnn.py -i $DATADIR -t ./experimenty/1 >log.txt 
  
 #cp vystup.txt $DATADIR 
 #cp vahy74.hdf5 $DATADIR 

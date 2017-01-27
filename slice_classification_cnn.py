@@ -67,6 +67,83 @@ def test_picture(soubor):
     b = b.reshape(pocet, 1, b.shape[1], b.shape[2])
     return b, a, origin
 
+def nacteni_c(soubor):
+    a = list()
+    b = list()
+    c = h5py.File(soubor, 'r')
+    pocet = 0
+    for i in c.keys():
+        gr = c[i]
+        for j in gr.keys():
+            if j == '0':
+                continue
+            name = int(j)
+            prev = gr[str(name-1)]
+            try:
+                next = gr[str(name+1)]
+            except KeyError:
+                continue
+
+            dts = gr[j]
+
+            atr = dts.attrs
+            x = np.zeros(3)  #
+            x[atr['teacher'] - 1] = 1  # 3 třídy
+            a.append(x)  #
+
+            # if atr['teacher'] == 2:     #
+            #   a.append(1)              #
+            # else:                       # 2 třídy
+            #   a.append(0)              #
+
+            # b.append(dts[:,:])   #bez prumerovani
+
+            pocet += 1
+            # b.append(abs(dts[:, :]) / float(np.max(abs(dts[:, :]))))  # s prumerovanim
+            res = np.concatenate((prev[:,:],dts[:,:],next[:,:] ),axis=1)
+            b.append(abs(res[:, :]) / float(np.max(abs(res[:, :]))))
+    a = np.asarray(a)
+    b = np.asarray(b)
+
+    b = b.reshape(pocet, 1, b.shape[1], b.shape[2])
+    return a, b
+
+
+def test_picture_c(soubor):
+    a = list()
+    b = list()
+    c = h5py.File(soubor, 'r')
+    pocet = 0
+    for i in c.keys():
+        gr = c[i]
+        ax = len(gr.keys())
+        for j in range(ax-1):
+            if j==0:
+                dts = gr[str(j)]
+                continue
+            prev = dts
+            next = gr[str(j+1)]
+            dts = gr[str(j)]
+            atr = dts.attrs
+            x = np.zeros(3)
+            x[atr['teacher'] - 1] = 1
+            a.append(x)
+            # if atr['teacher'] == 2:
+            #   a.append(1)
+            # else:
+            #   a.append(0)
+            # b.append(dts[:,:])
+            pocet += 1
+            # b.append(abs(dts[:, :]) / float(np.max(abs(dts[:, :]))))
+            res = np.concatenate((prev[:, :], dts[:, :], next[:, :]), axis=1)
+            b.append(abs(res[:, :]) / float(np.max(abs(res[:, :]))))
+            origin = atr['origin file']
+        break
+    a = np.asarray(a)
+    b = np.asarray(b)
+    b = b.reshape(pocet, 1, b.shape[1], b.shape[2])
+    return b, a, origin
+
 
 def main():
     parser = argparse.ArgumentParser(description='CNN training')
@@ -77,6 +154,8 @@ def main():
     parser.add_argument('-t', '--test-data-dir', type=str,
                         help='whole experiment')
     parser.add_argument('-m', '--model', type=str, help='model file')
+    parser.add_argument('-c', '--context', action='store_true', help='use context of image')
+    parser.add_argument('-a', '--augmentation', action='store_false', help='augmentation use')
     args = parser.parse_args()
 
 
@@ -89,26 +168,36 @@ def main():
     trainfile = op.join(args.input_data_dir, 'train.hdf5')
     if args.output_data_dir:
         outputfile = op.join(args.output_data_dir, 'vahy.hdf5')
-    testl, testd = nacteni(testfile)
-    res = testd.shape[2]
+    if args.context:
+        testl, testd = nacteni_c(testfile)
 
-    trainl, traind = nacteni(trainfile)
 
-    td, tl, orig = test_picture(testfile)
+        trainl, traind = nacteni_c(trainfile)
 
+        td, tl, orig = test_picture_c(testfile)
+    else:
+        testl, testd = nacteni(testfile)
+
+
+        trainl, traind = nacteni(trainfile)
+
+        td, tl, orig = test_picture(testfile)
+
+    res = testd.shape[2:]
     seed = 7
     np.random.seed(seed)
+    if args.augmentation:
+        datagen = ImageDataGenerator(
+            rotation_range=40,
+            # width_shift_range=0.2,
+            # height_shift_range=0.2,
+            # shear_range=0.2,
+            # zoom_range=0.2,
+            # horizontal_flip=True,
+            fill_mode='nearest')
 
-    datagen = ImageDataGenerator(
-        rotation_range=40,
-        # width_shift_range=0.2,
-        # height_shift_range=0.2,
-        # shear_range=0.2,
-        # zoom_range=0.2,
-        # horizontal_flip=True,
-        fill_mode='nearest')
+        gen = datagen.flow(traind, trainl, batch_size=30)
 
-    gen = datagen.flow(traind, trainl, batch_size=30)
     if args.model:
         json_file = open(args.model, 'r')
         loaded_model_json = json_file.read()
@@ -117,20 +206,15 @@ def main():
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     else:
         model = Sequential()
-        model.add(Convolution2D(64, 3, 3, border_mode='same', input_shape=(1, res, res)))
+        model.add(Convolution2D(32, 3, 3, border_mode='same', input_shape=(1, res[0], res[1])))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
-        model.add(Convolution2D(64, 3, 3, border_mode='same', input_shape=(1, res, res)))
+        model.add(Convolution2D(32, 3, 3, border_mode='same'))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
-
-        model.add(Convolution2D(64, 3, 3, border_mode='same'))
-        model.add(Activation('relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-
-        model.add(Convolution2D(64, 3, 3, border_mode='same'))
+        model.add(Convolution2D(32, 3, 3, border_mode='same'))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
@@ -146,8 +230,11 @@ def main():
         # model.add(Dense(1))
         # model.add(Activation('sigmoid')) # 2tridy
         # model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-
-    model.fit_generator(gen, samples_per_epoch=30, nb_epoch=500)
+    print 'trenovani'
+    if args.augmentation:
+        model.fit_generator(gen, samples_per_epoch=30, nb_epoch=500)
+    else:
+        model.fit(td, tl, batch_size= 32, nb_epoch = 100)
 
     scores = model.evaluate(testd, testl)
     vis = list()

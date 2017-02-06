@@ -7,6 +7,7 @@ import h5py
 import argparse
 import os.path as op
 import cPickle as pickle
+import scipy.ndimage.interpolation as interpolation
 
 
 def nacteni(soubor):
@@ -91,17 +92,27 @@ def nacteni_c(soubor):
             x[atr['teacher'] - 1] = 1  # 3 třídy
             a.append(x)  #
 
-            # if atr['teacher'] == 2:     #
-            #   a.append(1)              #
-            # else:                       # 2 třídy
-            #   a.append(0)              #
-
-            # b.append(dts[:,:])   #bez prumerovani
-
             pocet += 1
-            # b.append(abs(dts[:, :]) / float(np.max(abs(dts[:, :]))))  # s prumerovanim
+
             res = np.concatenate((prev[:,:],dts[:,:],next[:,:] ),axis=1)
             b.append(abs(res[:, :]) / float(np.max(abs(res[:, :]))))
+            for i in range(5, 11, 5):
+                pocet += 1
+                prevR = interpolation.rotate(prev, i, reshape=False, cval=-1024)
+                dtsR = interpolation.rotate(prev, i, reshape=False, cval=-1024)
+                nextR = interpolation.rotate(prev, i, reshape=False, cval=-1024)
+                res = np.concatenate((prevR[:, :], dtsR[:, :], nextR[:, :]), axis=1)
+                b.append(abs(res[:, :]) / float(np.max(abs(res[:, :]))))
+                a.append(x)
+
+                pocet += 1
+                prevR = interpolation.rotate(prev, -i, reshape=False, cval=-1024)
+                dtsR = interpolation.rotate(prev, -i, reshape=False, cval=-1024)
+                nextR = interpolation.rotate(prev, -i, reshape=False, cval=-1024)
+                res = np.concatenate((prevR[:, :], dtsR[:, :], nextR[:, :]), axis=1)
+                b.append(abs(res[:, :]) / float(np.max(abs(res[:, :]))))
+                a.append(x)
+
     a = np.asarray(a)
     b = np.asarray(b)
 
@@ -245,6 +256,9 @@ def main():
         aaa = model.predict(i)
         vis.append(aaa)
         print np.around(aaa), tl[ind]
+
+
+
 
 
     if args.test_data_dir:

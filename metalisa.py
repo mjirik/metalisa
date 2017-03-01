@@ -15,11 +15,69 @@ logger = logging.getLogger(__name__)
 import argparse
 
 
+import numpy as np
+import io3d
+import pandas as pd
+import os.path
+
 def train(trainpath):
     pass
 
 def predict(predictpath):
     pass
+
+def sample_data(trainpath):
+    filename = os.path.join(trainpath, "data01.pklz")
+    labeling_path = os.path.join(trainpath, "train.csv")
+
+    data3d, labeling = sample_one_data()
+    save_one_sample_data(filename, labeling_path, data3d, labeling)
+
+    return data3d
+
+def save_one_sample_data(filename, labeling_path, data3d, labeling):
+    io3d.datawriter.write(data3d, filename, metadata={"voxelsize_mm": [1, 1, 1]})
+    labeling["filename"] = [filename, filename, filename]
+
+    df = pd.DataFrame(labeling)
+
+    if os.path.exists(labeling_path):
+        df0 = pd.read_csv(labeling_path)
+    else:
+        df0 = pd.DataFrame()
+    new_df = pd.concat([df0, df])
+
+    new_df.to_csv(labeling_path)
+
+
+
+def sample_one_data():
+
+    datasize = [300, 512, 512]
+
+    data3d = np.ones(shape=datasize, dtype=np.int16) * -1024
+    heath_intensity = 230
+    liver_intensity = 130
+
+    start_slice_number = 55
+    stop_slice_number = 100
+    data3d[:, 40:-70, 45:-30] = 100
+    data3d[:, 50:-80, 55:-40] = -100
+    data3d[0:50, 45:-80, 55:-40] = -800
+    data3d[20:55, 310:370, 200:300] = heath_intensity
+    data3d[start_slice_number:stop_slice_number, 200:400, 60:400] = liver_intensity
+    noise = (np.random.rand(*datasize) * 100).astype(np.int16)
+    data3d += noise
+
+    metadata = {
+        "label": ["under liver", "liver", "above liver"],
+        "start_slice_number": [0, start_slice_number, stop_slice_number],
+        "stop_slice_number": [start_slice_number - 1, stop_slice_number - 1, datasize[0]],
+        "filename": [None, None, None]
+    }
+
+
+    return data3d, metadata
 
 
 def main():

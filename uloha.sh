@@ -2,7 +2,7 @@
 #PBS -N poloharezu
 #PBS -l nodes=1:ppn=1:cl_konos
 #PBS -q gpu
-#PBS -l mem=30gb
+#PBS -l mem=20gb
 #PBS -l walltime=5h
 #PBS -l gpu=1
 #trap 'clean_scratch' TERM EXIT
@@ -33,7 +33,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/storage/plzen1/home/mhlavac/keras_104/s
 #cp $DATADIR/ker74.py $SCRATCHDIR   ||exit 1
 #cd $SCRATCHDIR || exit 2
 
-python slice_classification_cnn.py -i $DATADIR  -t ./experimenty/14 >./experimenty/14/log.txt -a -c 
+python slice_classification_cnn.py -i $DATADIR  -t ./experimenty/15 >./experimenty/15/log.txt -a -c 
  
 #cp vystup.txt $DATADIR 
 #cp vahy74.hdf5 $DATADIR 

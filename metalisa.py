@@ -13,12 +13,19 @@
 import logging
 logger = logging.getLogger(__name__)
 import argparse
+import glob
 
 
-def train(trainpath):
+def train(trainpath, modelpath="model.hdf5", csvpath=None):
+    if csvpath is None:
+        csvfiles = glob.glob(os.path.join(trainpath, "*.csv")
+        csvpath = csvfiles[0]
+        if len(csvfiles) > 1:
+            logger.error("There is more .csv files in train directory. Please select one with csvpath parameter.")
+
     pass
 
-def predict(predictpath):
+def predict(predictpath, modelpath="model.hdf5", csvpath="prediction.csv"):
     pass
 
 

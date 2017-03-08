@@ -44,10 +44,6 @@ def load_data(filename, csv=None):
 
     return images, labels
 
-def get_labels_from_csv(filename, csv):
-    df[]
-
-    return labels
 
 def train(trainpath, modelpath="model.hdf5", csvpath=None):
     if csvpath is None:

@@ -23,24 +23,31 @@ from keras.layers import Dense, Activation, Convolution2D, MaxPooling2D, Flatten
 
 
 def load_data(filename, csv=None):
-    with open(filename, 'r') as f:
-        data = f.load()
+    datap = io3d.datareader.read(filename, dataplus_format=True)
+    data3d = datap["data3d"]
 
-    if len(data.shape) == 3:
+    if csv:
+        df = pd.read_csv(csv)
+        # TODO
+
+        labels=None
+
+    if len(data3d.shape) == 3:
         images = list()
-        for i in data:
+        for i in data3d:
             images.append(i)
 
     else:
-        image = data
-
-    if csv:
-        labels = pd.read_csv(csv)
+        image = data3d
 
 
 
-    return data
+    return images, labels
 
+def get_labels_from_csv(filename, csv):
+    df[]
+
+    return labels
 
 def train(trainpath, modelpath="model.hdf5", csvpath=None):
     if csvpath is None:
@@ -53,9 +60,10 @@ def train(trainpath, modelpath="model.hdf5", csvpath=None):
     td = list()
 
     for filename in glob.glob(os.path.join(trainpath, '*.pklz')):
-        image = load_data(filename, csvpath)
-        td += image[0]
-        tl += image[1]
+        logger.info(filename)
+        image, labels = load_data(filename, csvpath)
+        td += image
+        tl += labels
 
     td = np.array(tl)
     shape = td.shape
@@ -85,7 +93,7 @@ def train(trainpath, modelpath="model.hdf5", csvpath=None):
     model.add(Activation('softmax'))  # 3tridy
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-    model.fit(td, tl, batch_size=32, nb_epoch=100)
+    model.train(td, tl, batch_size=32, nb_epoch=100)
 
     with open(modelpath, 'w') as json_file:
         model_json = model.to_json()
@@ -104,13 +112,14 @@ def predict(predictpath, modelpath="model.json", csvpath="prediction.csv"):
     names = list()
 
     for filename in glob.glob(os.path.join(predictpath, '*.pklz')):
+        logger.info(filename)
         image = load_data(filename)
         for i in image:
             vysledky.append(model.predict(image))
             names.append(filename)
     with open(csvpath, 'w') as f:
         for i in vysledky:
-            pd.
+            pass
 
 def sample_data(trainpath):
     filename = os.path.join(trainpath, "data01.pklz")
@@ -198,16 +207,33 @@ def main():
         help='Debug mode')
 
     parser.add_argument(
+        '-csd', '--create-sample-data', action='store_true',
+        help='Debug mode')
+
+    parser.add_argument(
         '-l', '--logfile',
         default="~/teigen.log",
         help='Debug mode')
+
     parser.add_argument(
-        '-t', '--trainpath',
-        default=None,
+        '-t', '--train', action='store_true',
+        help='Run train')
+
+    parser.add_argument(
+        '-tp', '--trainpath',
+        default="train",
         help='Train path')
 
     parser.add_argument(
-        '-p', '--predictpath',
+        '-c', '--configpath',
+        default=None,
+        help='config file path')
+
+    parser.add_argument(
+        '-p', '--predict', action='store_true',
+        help='Run prediction')
+    parser.add_argument(
+        '-pp', '--predictpath',
         default=None,
         help='Train path')
 
@@ -218,18 +244,22 @@ def main():
 
     args = parser.parse_args()
 
-
     if args.debug:
         ch.setLevel(logging.DEBUG)
 
-    if args.parameterfile is None:
+
+    if args.configpath is None:
         pass
 
-    if args.trainpath is not None:
+    if args.create_sample_data:
+        sample_data(trainpath=args.trainpath)
+
+    if args.train:
         train(args.trainpath, args.modelpath)
 
-    if args.predictpath is not None:
+    if args.predict:
         predict(args.predictpath, args.modelpath)
+
 
 if __name__ == "__main__":
     main()

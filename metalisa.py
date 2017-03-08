@@ -18,6 +18,28 @@ import numpy as np
 import io3d
 import pandas as pd
 import os.path
+from keras.models import Sequential, model_from_json
+from keras.layers import Dense, Activation, Convolution2D, MaxPooling2D, Flatten, Dropout
+
+
+def load_data(filename, csv=None):
+    with open(filename, 'r') as f:
+        data = f.load()
+
+    if len(data.shape) == 3:
+        images = list()
+        for i in data:
+            images.append(i)
+
+    else:
+        image = data
+
+    if csv:
+        labels = pd.read_csv(csv)
+
+
+
+    return data
 
 
 def train(trainpath, modelpath="model.hdf5", csvpath=None):
@@ -27,10 +49,68 @@ def train(trainpath, modelpath="model.hdf5", csvpath=None):
         if len(csvfiles) > 1:
             logger.error("There is more .csv files in train directory. Please select one with csvpath parameter.")
 
-    pass
+    tl = list()
+    td = list()
 
-def predict(predictpath, modelpath="model.hdf5", csvpath="prediction.csv"):
-    pass
+    for filename in glob.glob(os.path.join(trainpath, '*.pklz')):
+        image = load_data(filename, csvpath)
+        td += image[0]
+        tl += image[1]
+
+    td = np.array(tl)
+    shape = td.shape
+    td.reshape(shape[0], 1, shape[1], shape[2])
+    tl = np.array(td)
+
+
+    model = Sequential()
+    model.add(Convolution2D(32, 3, 3, border_mode='same', input_shape=(1, shape[1], shape[2])))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Convolution2D(32, 3, 3, border_mode='same'))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Convolution2D(32, 3, 3, border_mode='same'))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Flatten())
+    model.add(Dense(64))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+
+    model.add(Dense(3))
+    model.add(Activation('softmax'))  # 3tridy
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+    model.fit(td, tl, batch_size=32, nb_epoch=100)
+
+    with open(modelpath, 'w') as json_file:
+        model_json = model.to_json()
+        json_file.write(model_json)
+
+def predict(predictpath, modelpath="model.json", csvpath="prediction.csv"):
+
+    json_file = open(modelpath, 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    model = model_from_json(loaded_model_json)
+
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+    vysledky = list()
+    names = list()
+
+    for filename in glob.glob(os.path.join(predictpath, '*.pklz')):
+        image = load_data(filename)
+        for i in image:
+            vysledky.append(model.predict(image))
+            names.append(filename)
+    with open(csvpath, 'w') as f:
+        for i in vysledky:
+            pd.
 
 def sample_data(trainpath):
     filename = os.path.join(trainpath, "data01.pklz")

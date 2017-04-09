@@ -274,20 +274,20 @@ def main():
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     else:
         model = Sequential()
-        model.add(Convolution2D(32, 3, 3, border_mode='same', input_shape=(1, res[0], res[1])))
+        model.add(Convolution2D(16, 3, 3, border_mode='same', input_shape=(1, res[0], res[1])))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
-        model.add(Convolution2D(32, 3, 3, border_mode='same'))
+        model.add(Convolution2D(16, 3, 3, border_mode='same'))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
-        model.add(Convolution2D(32, 3, 3, border_mode='same'))
+        model.add(Convolution2D(16, 3, 3, border_mode='same'))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
         model.add(Flatten())
-        model.add(Dense(64))
+        model.add(Dense(32))
         model.add(Activation('relu'))
         model.add(Dropout(0.5))
 

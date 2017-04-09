@@ -33,7 +33,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/storage/plzen1/home/mhlavac/keras_104/s
 #cp $DATADIR/ker74.py $SCRATCHDIR   ||exit 1
 #cd $SCRATCHDIR || exit 2
 
-python slice_classification_cnn.py -i $DATADIR  -t ./experimenty/15 >./experimenty/15/log.txt -a -c 
+python slice_classification_cnn.py -i $DATADIR  -t ./experimenty/16 >./experimenty/16/log.txt -a -c 
  
 #cp vystup.txt $DATADIR 
 #cp vahy74.hdf5 $DATADIR 

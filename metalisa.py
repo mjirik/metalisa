@@ -28,9 +28,30 @@ def load_data(filename, csv=None):
 
     if csv:
         df = pd.read_csv(csv)
-        # TODO
+        labs = np.unique(df["label"])
+        vals = range(len(labs))
 
-        labels=None
+        slab = dict(zip(labs, vals))
+
+        fn_unique = np.unique(df["filename"])
+
+        name = filename.split('/')[-1]
+
+        index = [i for i, item in enumerate(fn_unique) if item.endswith(name)][0]
+
+        this_fn = fn_unique[index]
+        one_file = df[df["filename"] == this_fn]
+
+        maximum_slice_number = np.max(np.max(one_file[["start_slice_number", "stop_slice_number"]]))
+
+        labels = [None] * maximum_slice_number
+
+        dct = one_file[["label", "start_slice_number", "stop_slice_number"]].to_dict()
+
+        for i in range(len(dct["start_slice_number"])):
+            for i in slab.values():
+                for j in range(dct["start_slice_number"][i], dct["stop_slice_number"][i]):
+                    labels[j] = dct["label"][i]
 
     if len(data3d.shape) == 3:
         images = list()
@@ -38,11 +59,11 @@ def load_data(filename, csv=None):
             images.append(i)
 
     else:
-        image = data3d
+        images = data3d
 
 
 
-    return images, labels
+    return images, labels #,slab
 
 
 def train(trainpath, modelpath="model.hdf5", csvpath=None):
@@ -107,18 +128,25 @@ def predict(predictpath, modelpath="model.json", csvpath="prediction.csv"):
     vysledky = list()
     names = list()
 
-    for filename in glob.glob(os.path.join(predictpath, '*.pklz')):
+    for filename in glob.glob(os.path.join(predictpath, '*.tiff')):
         logger.info(filename)
         image = load_data(filename)
         for i in image:
             vysledky.append(model.predict(image))
             names.append(filename)
     with open(csvpath, 'w') as f:
-        for i in vysledky:
-            pass
+        if os.path.exists(csvpath):
+            df0 = pd.read_csv(csvpath)
+        else:
+            df0 = pd.DataFrame()
+        new_df = df0
+        for i in range(len(vysledky)):
+            df = pd.DataFrame([names[i]], [vysledky[i]], columns=['filename','result'])
+            new_df = new_df.append(df)
+        new_df.to_csv(csvpath)
 
 def sample_data(trainpath):
-    filename = os.path.join(trainpath, "data01.pklz")
+    filename = os.path.join(trainpath, "data01.tiff")
     labeling_path = os.path.join(trainpath, "train.csv")
 
     data3d, labeling = sample_one_data()
@@ -249,6 +277,8 @@ def main():
 
     if args.create_sample_data:
         sample_data(trainpath=args.trainpath)
+
+    pass
 
     if args.train:
         train(args.trainpath, args.modelpath)

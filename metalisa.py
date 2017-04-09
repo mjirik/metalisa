@@ -37,7 +37,10 @@ def load_data(filename, csv=None):
 
         name = filename.split('/')[-1]
 
-        index = [i for i, item in enumerate(fn_unique) if item.endswith(name)][0]
+        file_list = [i for i, item in enumerate(fn_unique) if item.endswith(name)]
+
+
+        index = file_list[0]
 
         this_fn = fn_unique[index]
         one_file = df[df["filename"] == this_fn]
@@ -63,10 +66,10 @@ def load_data(filename, csv=None):
 
 
 
-    return images, labels #,slab
+    return images, labels, slab
 
 
-def train(trainpath, modelpath="model.hdf5", csvpath=None):
+def train(trainpath, modelpath="model.json", csvpath=None):
     if csvpath is None:
         csvfiles = glob.glob(os.path.join(trainpath, "*.csv"))
         csvpath = csvfiles[0]
@@ -76,9 +79,9 @@ def train(trainpath, modelpath="model.hdf5", csvpath=None):
     tl = list()
     td = list()
 
-    for filename in glob.glob(os.path.join(trainpath, '*.pklz')):
+    for filename in glob.glob(os.path.join(trainpath, '*.tiff')):
         logger.info(filename)
-        image, labels = load_data(filename, csvpath)
+        image, labels, slab = load_data(filename, csvpath)
         td += image
         tl += labels
 
@@ -116,9 +119,13 @@ def train(trainpath, modelpath="model.hdf5", csvpath=None):
         model_json = model.to_json()
         json_file.write(model_json)
 
+    with open(modelpath+'.yaml' 'w') as f:
+        f.write(slab)
+
 def predict(predictpath, modelpath="model.json", csvpath="prediction.csv"):
 
     json_file = open(modelpath, 'r')
+    slab = open(modelpath+'.yaml', 'r')
     loaded_model_json = json_file.read()
     json_file.close()
     model = model_from_json(loaded_model_json)
@@ -127,25 +134,32 @@ def predict(predictpath, modelpath="model.json", csvpath="prediction.csv"):
 
     vysledky = list()
     names = list()
+    slice = list()
 
     for filename in glob.glob(os.path.join(predictpath, '*.tiff')):
         logger.info(filename)
         image = load_data(filename)
+        num = 0
         for i in image:
             vysledky.append(model.predict(image))
             names.append(filename)
-    with open(csvpath, 'w') as f:
-        if os.path.exists(csvpath):
-            df0 = pd.read_csv(csvpath)
-        else:
-            df0 = pd.DataFrame()
-        new_df = df0
-        for i in range(len(vysledky)):
-            df = pd.DataFrame([names[i]], [vysledky[i]], columns=['filename','result'])
-            new_df = new_df.append(df)
-        new_df.to_csv(csvpath)
+            slice.append(num)
+            num += 1
+
+    if os.path.exists(csvpath):
+        df0 = pd.read_csv(csvpath)
+    else:
+        df0 = pd.DataFrame()
+    new_df = df0
+    dt = {'Filename': names, 'Slice_number': slice, 'Numeric_Label': vysledky,  'Text_Label': vysledky}
+    df = pd.DataFrame(dt)
+    new_df = pd.concat(df,new_df)
+    new_df.to_csv(csvpath)
+
+    return new_df
 
 def sample_data(trainpath):
+    '''vytvoření sample dat ulozeni do cesty a vraci je pro dalsi praci'''
     filename = os.path.join(trainpath, "data01.tiff")
     labeling_path = os.path.join(trainpath, "train.csv")
 
@@ -189,7 +203,7 @@ def sample_one_data():
     data3d += noise
 
     metadata = {
-        "label": ["under liver", "liver", "above liver"],
+        "label": ["under_liver", "liver", "above_liver"],
         "start_slice_number": [0, start_slice_number, stop_slice_number],
         "stop_slice_number": [start_slice_number - 1, stop_slice_number - 1, datasize[0]],
         "filename": [None, None, None]

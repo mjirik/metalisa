@@ -138,10 +138,10 @@ def predict(predictpath, modelpath="model.json", csvpath="prediction.csv"):
 
     for filename in glob.glob(os.path.join(predictpath, '*.tiff')):
         logger.info(filename)
-        image = load_data(filename)
+        _, image, _ = load_data(filename)
         num = 0
         for i in image:
-            vysledky.append(model.predict(image))
+            vysledky.append(model.predict(i))
             names.append(filename)
             slice.append(num)
             num += 1
@@ -154,7 +154,7 @@ def predict(predictpath, modelpath="model.json", csvpath="prediction.csv"):
     dt = {'Filename': names, 'Slice_number': slice, 'Numeric_Label': vysledky,  'Text_Label': vysledky}
     df = pd.DataFrame(dt)
     new_df = pd.concat(df,new_df)
-    new_df.to_csv(csvpath)
+    new_df.to_csv(csvpath, index=False)
 
     return new_df
 

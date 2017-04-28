@@ -1,0 +1,9 @@
+sub_layers=3
+layers=2
+filters=32
+filter_size=3
+activation=relu
+max_polling_size=2
+dense_filters=64
+dropout=0.5
+output_neurons=3

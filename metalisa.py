@@ -22,6 +22,36 @@ from keras.models import Sequential, model_from_json
 from keras.layers import Dense, Activation, Convolution2D, MaxPooling2D, Flatten, Dropout
 
 
+def model_creation(config_file, shape):
+    config = open('config.txt', 'r')
+    con = dict()
+    for i in config:
+        a = i.split('=')
+        con[a[0]] = a[1].strip()
+
+    model = Sequential()
+
+    for i in range(int(con['layers'])):
+        for j in range(int(con['sub_layers'])):
+            model.add(
+                Convolution2D(int(con['filters']), int(con['filter_size']), int(con['filter_size']), border_mode='same',
+                              input_shape=(1, shape[1], shape[2])))
+        model.add(Activation(con['activation']))
+        model.add(MaxPooling2D(pool_size=(int(con['max_polling_size']), int(con['max_polling_size']))))
+    model.add(Flatten())
+    model.add(Dense(int(con['dense_filters'])))
+    model.add(Activation(con['activation']))
+    model.add(Dropout(float(con['dropout'])))
+
+    model.add(Dense(int(con['output_neurons'])))
+    if int(con['output_neurons']) < 3:
+        model.add(Activation('sigmoid'))
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    else:
+        model.add(Activation('softmax'))
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
 def load_data(filename, csv=None):
     datap = io3d.datareader.read(filename, dataplus_format=True)
     data3d = datap["data3d"]
@@ -91,31 +121,62 @@ def train(trainpath, modelpath="model.json", csvpath=None):
     tl = np.array(td)
 
 
+    try:
+        config = open('config.txt', 'r')
+    except:
+        model = Sequential()
+        model.add(Convolution2D(32, 3, 3, border_mode='same', input_shape=(1, shape[1], shape[2])))
+        model.add(Activation('relu'))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+
+        model.add(Convolution2D(32, 3, 3, border_mode='same'))
+        model.add(Activation('relu'))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+
+        model.add(Convolution2D(32, 3, 3, border_mode='same'))
+        model.add(Activation('relu'))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+
+        model.add(Flatten())
+        model.add(Dense(64))
+        model.add(Activation('relu'))
+        model.add(Dropout(0.5))
+
+        model.add(Dense(3))
+        model.add(Activation('softmax'))  # 3tridy
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    con = dict()
+    for i in config:
+        a = i.split('=')
+        con[a[0]] = a[1].strip()
+
     model = Sequential()
-    model.add(Convolution2D(32, 3, 3, border_mode='same', input_shape=(1, shape[1], shape[2])))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    model.add(Convolution2D(32, 3, 3, border_mode='same'))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-
-    model.add(Convolution2D(32, 3, 3, border_mode='same'))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-
+    for i in range(int(con['layers'])):
+        for j in range(int(con['sub_layers'])):
+            model.add(
+                Convolution2D(int(con['filters']), int(con['filter_size']), int(con['filter_size']), border_mode='same',
+                              input_shape=(1, shape[1], shape[2])))
+        model.add(Activation(con['activation']))
+        model.add(MaxPooling2D(pool_size=(int(con['max_polling_size']), int(con['max_polling_size']))))
     model.add(Flatten())
-    model.add(Dense(64))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.5))
+    model.add(Dense(int(con['dense_filters'])))
+    model.add(Activation(con['activation']))
+    model.add(Dropout(float(con['dropout'])))
 
-    model.add(Dense(3))
-    model.add(Activation('softmax'))  # 3tridy
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.add(Dense(int(con['output_neurons'])))
+    if int(con['output_neurons']) < 3:
+        model.add(Activation('sigmoid'))
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    else:
+        model.add(Activation('softmax'))
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+
 
     model.train(td, tl, batch_size=32, nb_epoch=100)
 
-    with open(modelpath, 'w') as json_file:
+    with open(modelpath+'.json', 'w') as json_file:
         model_json = model.to_json()
         json_file.write(model_json)
 
@@ -285,10 +346,6 @@ def main():
     if args.debug:
         ch.setLevel(logging.DEBUG)
 
-
-    if args.configpath is None:
-        pass
-
     if args.create_sample_data:
         sample_data(trainpath=args.trainpath)
 
@@ -299,7 +356,6 @@ def main():
 
     if args.predict:
         predict(args.predictpath, args.modelpath)
-
 
 if __name__ == "__main__":
     main()

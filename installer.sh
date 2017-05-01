@@ -100,4 +100,4 @@ fi
 
 wget https://raw.githubusercontent.com/mjirik/metalisa/master/requirements_conda.txt -O requirements_conda.txt
 
-conda install --yes --file requirements_conda.txt
+conda install -c mjirik -c simpleitk --yes --file requirements_conda.txt

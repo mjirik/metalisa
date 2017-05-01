@@ -1,0 +1,43 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: win-64
+#
+# similar list is in meta.yaml
+numpy=1.9.3
+pip>=6.0.8
+python=2.7.9=1
+scipy>=0.15.*
+setuptools=12.2=py27_0
+matplotlib=1.4.3
+scikit-image=0.11.0=np19py27_0
+scikit-learn=0.15.2=np19py27_0
+cython=0.22=py27_0
+pyqt>=4.10.4
+yaml=0.1.6
+pyyaml=3.11
+vtk=5.10.1
+# pandas is installed with pip
+ipython=3.1.0=py27_0
+SimpleITK=0.9.1
+h5py=2.5.0
+pywget=2.2
+opencv>=2.4.0
+libpng
+pandas
+# -c luispedro but only for linux-64
+# mahotas
+# -c mjirik
+pydicom>=0.9.9
+pysegbase>=1.0.39
+dicom2fem>=1.0.0
+sed3>=1.1.17
+io3d>=1.0.18
+imtools>=0.0.1
+# pygco==0.0.5
+joblib>=0.8.4
+morphsnakes
+skelet3d
+sftpsync>=1.0.2
+# geodesic distance transform -c jmargeta -c jakirkham
+# on osx install with pip
+# scikit-fmm

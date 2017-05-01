@@ -19,7 +19,8 @@ echo "installing for user:"
 echo "$USER"
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        # ...
+    echo "linux"
+    # ...
     # wget https://raw.githubusercontent.com/mjirik/lisa/master/requirements_apt.txt -O requirements_apt.txt
 
     # sudo apt-get install -y -qq $(grep -vE "^\s*#" requirements_apt.txt | tr "\n" " ")

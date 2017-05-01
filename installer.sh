@@ -93,9 +93,11 @@ fi
 # if [ -f $file ] ; then
 #     rm $file
 # fi
-# file="requirements_conda.txt"
-# if [ -f $file ] ; then
-#     rm $file
-# fi
+file="requirements_conda.txt"
+if [ -f $file ] ; then
+    rm $file
+fi
+
+wget https://raw.githubusercontent.com/mjirik/metalisa/master/requirements_conda.txt -o requirements_conda.txt
 
 conda install --yes --file requirements_conda.txt

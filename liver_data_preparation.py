@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def sliver_preparation(datadirpath, output_datadirpath="output_data", res=100, ax=0):
     organ = 'liver'
     csvpath = output_datadirpath + '/sliver_label_'+str(res)+'.csv'
-	stat = output_datadirpath + '/sliver_stat.csv'
+    stat = output_datadirpath + '/sliver_stat.csv'
     # datadirpath = '/home/trineon/projects/metalisa/data/SLIVER'
     f = h5py.File(output_datadirpath +'/sliver_'+str(res)+'.hdf5', 'a')
     num = 1
@@ -65,16 +65,15 @@ def sliver_preparation(datadirpath, output_datadirpath="output_data", res=100, a
             df0 = pd.DataFrame.from_dict(dt)
             new_df = df0
         new_df.to_csv(csvpath, index=False)
-	
-		dt = {'filename': filename, 'under liver': l.index(2) - 1, 'liver': l.index(3)-1-l.index(2), 'aboveliver': len(l)-1-k.index(3)}
-		if os.path.exists(stat):
-	        new_df = pd.read_csv(stat)
-	        df = pd.DataFrame.from_dict(dt)
-	        new_df = pd.concat([new_df, df], ignore_index=True)
-	    else:
-	        df0 = pd.DataFrame.from_dict(dt)
-	        new_df = df0
-	    new_df.to_csv(stat, index=False)
+        dt = {'filename': filename, 'under liver': l.index(2) - 1, 'liver': l.index(3)-1-l.index(2), 'aboveliver': len(l)-1-l.index(3)}
+        if os.path.exists(stat):
+            new_df = pd.read_csv(stat)
+            df = pd.DataFrame.from_dict(dt)
+            new_df = pd.concat([new_df, df], ignore_index=True)
+        else:
+            df0 = pd.DataFrame.from_dict(dt)
+            new_df = df0
+        new_df.to_csv(stat, index=False)
 
     pass
 

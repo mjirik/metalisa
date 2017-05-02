@@ -19,18 +19,19 @@ logger = logging.getLogger(__name__)
 def sliver_preparation(datadirpath, output_datadirpath="output_data", res=100, ax=0):
     organ = 'liver'
     csvpath = output_datadirpath + '/sliver_label_'+str(res)+'.csv'
+	stat = output_datadirpath + '/sliver_stat.csv'
     # datadirpath = '/home/trineon/projects/metalisa/data/SLIVER'
     f = h5py.File(output_datadirpath +'/sliver_'+str(res)+'.hdf5', 'a')
-    name = 1
+    num = 1
     for image in glob.glob(datadirpath + '/*orig*.mhd'):
         group = f.create_group(image.split('/')[-1])
         orig, _ = DR.read(image)
         orig = misc.resize_to_shape(orig, [1, res, res])
         if ax != 0:
             orig = np.rollaxis(orig, ax)
-        DW.write(orig, output_datadirpath + '/sliver' +str(name) +'_'+str(ax)+'_' + str(res)+'.vtk', metadata={"voxelsize_mm": [1, 1, 1]})
-        filename = output_datadirpath + '/sliver' +str(name) +str(ax)+'_'  +'_' + str(res)+'.vtk'
-        name += 1
+        DW.write(orig, output_datadirpath + '/sliver' +str(num) +'_'+str(ax)+'_' + str(res)+'.mhd', metadata={"voxelsize_mm": [1, 1, 1]})
+        filename = output_datadirpath + '/sliver' +str(num) +str(ax)+'_'  +'_' + str(res)+'.mhd'
+        num += 1
         seg = image.replace('orig','seg')
         lab, _ = DR.read(seg)
         if ax != 0:
@@ -64,7 +65,16 @@ def sliver_preparation(datadirpath, output_datadirpath="output_data", res=100, a
             df0 = pd.DataFrame.from_dict(dt)
             new_df = df0
         new_df.to_csv(csvpath, index=False)
-
+	
+		dt = {'filename': filename, 'under liver': l.index(2) - 1, 'liver': l.index(3)-1-l.index(2), 'aboveliver': len(l)-1-k.index(3)}
+		if os.path.exists(stat):
+	        new_df = pd.read_csv(stat)
+	        df = pd.DataFrame.from_dict(dt)
+	        new_df = pd.concat([new_df, df], ignore_index=True)
+	    else:
+	        df0 = pd.DataFrame.from_dict(dt)
+	        new_df = df0
+	    new_df.to_csv(stat, index=False)
 
     pass
 
@@ -205,7 +215,7 @@ def main():
     args = parser.parse_args()
 
     # test
-    args.function = 'ircad'
+    # args.function = 'ircad'
 
 
     if args.debug:

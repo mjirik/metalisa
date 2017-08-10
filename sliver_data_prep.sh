@@ -16,5 +16,5 @@ PYTHONUSERBASE=$DIR
 export PATH=$PYTHONUSERBASE/bin:$PATH
 export PYTHONPATH=$PYTHONUSERBASE/lib/python2.7/site-packages:$PYTHONPATH
 # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/storage/plzen1/home/mhlavac/keras_104/src
-which python
 python liver_data_preparation.py -f sliver -dd data/SLIVER
+# python liver_data_preparation.py -f ircad -dd data/IRCAD

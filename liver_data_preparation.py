@@ -16,21 +16,21 @@ import imtools.misc as misc
 logger = logging.getLogger(__name__)
 
 
-def sliver_preparation(datadirpath, output_datadirpath="output_data", res=100, ax=0):
-    organ = 'liver'
-    csvpath = output_datadirpath + '/sliver_label_'+str(res)+'.csv'
-    stat = output_datadirpath + '/sliver_stat.csv'
+def sliver_preparation(datadirpath, output_datadirpath="output_data", res=100, ax=0, organ='liver'):
+    csvpath = output_datadirpath + '/sliver_label_'+str(res)+'_'+str(ax)+'_'+organ+'.csv'
+    stat = output_datadirpath + '/sliver_stat'+str(res)+'_'+str(ax)+'_'+organ+'.csv'
     # datadirpath = '/home/trineon/projects/metalisa/data/SLIVER'
-    f = h5py.File(output_datadirpath +'/sliver_'+str(res)+'.hdf5', 'a')
+    f = h5py.File(output_datadirpath + '/sliver_' + str(res) + '_' + str(ax) + '_' + organ +'.hdf5', 'a')
     num = 1
     for image in glob.glob(datadirpath + '/*orig*.mhd'):
         group = f.create_group(image.split('/')[-1])
         orig, _ = DR.read(image)
-        orig = misc.resize_to_shape(orig, [1, res, res])
         if ax != 0:
             orig = np.rollaxis(orig, ax)
-        DW.write(orig, output_datadirpath + '/sliver' +str(num) +'_'+str(ax)+'_' + str(res)+'.mhd', metadata={"voxelsize_mm": [1, 1, 1]})
-        filename = output_datadirpath + '/sliver' +str(num) +str(ax)+'_'  +'_' + str(res)+'.mhd'
+        i = orig.shape[0]
+        orig = misc.resize_to_shape(orig, [i, res, res])
+        DW.write(orig, output_datadirpath + '/sliver_' +str(num)+ '_' + str(res)+'_' + str(ax)+ '.pklz', metadata={"voxelsize_mm": [1, 1, 1]})
+        filename = output_datadirpath + '/sliver' +str(num) +'_' + str(res)+ '_' + str(ax)+ '.pklz'
         num += 1
         seg = image.replace('orig','seg')
         lab, _ = DR.read(seg)
@@ -39,7 +39,6 @@ def sliver_preparation(datadirpath, output_datadirpath="output_data", res=100, a
         l = list()
         a = 1
         for slice in lab:
-            print np.unique(slice)
             if len(np.unique(slice)) > 1:
                 l.append(2)
                 a = 2
@@ -48,15 +47,27 @@ def sliver_preparation(datadirpath, output_datadirpath="output_data", res=100, a
                     l.append(3)
                 else:
                     l.append(1)
+
+
         del lab
         for ind, slice in enumerate(orig):
             name = str(ind)
             dset = group.create_dataset(name, data=slice)
             dset.attrs['teacher'] = l[ind]
             dset.attrs['origin file'] = filename
+        if l[-1] == 2:
+            x = len(l)
+        else:
+            x = l.index(3)
+        if l[0] == 2:
+            y = 0
+        else:
+            y = l.index(2)
         dt = {'filename': [filename, filename, filename], 'label': ['under ' + organ, organ, 'above ' + organ],
-              'start_slice_number': [0, l.index(2), l.index(3)],
-              'stop_slice_number': [l.index(2) - 1, l.index(3) - 1, len(l)-1], 'axis': ax}
+              'start_slice_number': [0, y, x],
+              'stop_slice_number': [y - 1, x - 1, len(l)-1], 'axis': ax}
+        if dt['stop_slice_number'][0] == -1:
+            dt['stop_slice_number'][0] = 0
         if os.path.exists(csvpath):
             new_df = pd.read_csv(csvpath)
             df = pd.DataFrame.from_dict(dt)
@@ -65,7 +76,10 @@ def sliver_preparation(datadirpath, output_datadirpath="output_data", res=100, a
             df0 = pd.DataFrame.from_dict(dt)
             new_df = df0
         new_df.to_csv(csvpath, index=False)
-        dt = {'filename': filename, 'under liver': l.index(2) - 1, 'liver': l.index(3)-1-l.index(2), 'aboveliver': len(l)-1-l.index(3)}
+        a = y
+        b = x-y
+        c = len(l)-x
+        dt = {'filename': [filename], 'under liver': [a] , 'liver': [b], 'above liver': [c], 'slices':[len(l)]}
         if os.path.exists(stat):
             new_df = pd.read_csv(stat)
             df = pd.DataFrame.from_dict(dt)
@@ -77,51 +91,59 @@ def sliver_preparation(datadirpath, output_datadirpath="output_data", res=100, a
 
     pass
 
-def ircad_group(datadirpath, organ='liver'):
-    datadirpath = '/home/trineon/projects/metalisa/data/IRCAD'
 
+def ircad_group(datadirpath, organ='liver'):
+    # datadirpath = '/home/trineon/projects/metalisa/data/IRCAD'
     for folder in glob.glob(datadirpath + '/labels/*/'+organ+'/'):
         name = folder.split('/')[-3]
-        if (folder + 'IRCAD_' + str(name) +'_' +  organ +'.vtk') in glob.glob(folder+'*'):
-            return
+        if (folder + 'IRCAD_' + str(name) + '_' + organ +'.pklz') in glob.glob(folder+'*'):
+            continue
+
 
         else:
+            # concatenate CT slicis to one 3D ndarray [number_of slices, res(1), res(2)]
             scan = [None]* len(glob.glob(folder + '*'))
             for image in glob.glob(folder + '*'):
                 label, _ = DR.read(image)
                 scan[int(image.split('/')[-1].split('_')[-1])] = label
             scan = np.array(scan).astype(np.int32)
-            print np.unique(scan)
-            DW.write(scan, folder + 'IRCAD_'  + str(name) +'_' +  organ +'.vtk',
+            scan = scan.squeeze()
+            DW.write(scan, folder + 'IRCAD_' +  str(name) + '_' + organ + '.pklz',
                      metadata={"voxelsize_mm": [1, 1, 1]})
-            lab,_ = DR.read(folder + 'IRCAD_'  + str(name) +'_' +  organ +'.vtk')
-            print np.unique(lab)
 
+
+    pass
 def ircad_preparation(datadirpath, output_datadirpath="output_data", organ="liver",res=100, ax=0):
 
     #test
-    csvpath = output_datadirpath+'/label_ircad.csv'
-    datadirpath = '/home/trineon/projects/metalisa/data/IRCAD'
+    stat = output_datadirpath+'/stat_ircad'+str(res)+'_'+str(ax)+'_'+organ+'.csv'
+    csvpath = output_datadirpath+'/label_ircad_'+str(res)+'_'+str(ax)+'_'+organ+'.csv'
+    # datadirpath = '/home/trineon/projects/metalisa/data/IRCAD'
+
     seznam = [None] * 20
-    for folder in glob.glob(datadirpath+'/Pacient/*/')[:2]:
+    for folder in glob.glob(datadirpath+'/Pacient/*/'):
         count = len(glob.glob(folder+'*'))
         l = [None] * count
         for image in glob.glob(folder+'*'):
             number = int(image.split('/')[-1].split('_')[-1])-1
             l[number], _ = DR.read(image)
+            if ax != 0:
+                l[number] = np.rollaxis(l[number], ax)
         for ind, i in enumerate(l):
             l[ind] = misc.resize_to_shape(i, [1, res, res])
         scan = np.array(l)
         if ax != 0:
             np.rollaxis(scan, ax)
         name = folder.split('/')[-2]
-        DW.write(scan, output_datadirpath + '/IRCAD_'+organ+'_'+str(ax)+'_' +str(name) +'_' + str(res)+'.vtk', metadata={"voxelsize_mm": [1, 1, 1]})
-        seznam[int(name)-1] = output_datadirpath + '/IRCAD_'+organ+'_'+str(ax)+'_' +str(name) +'_' + str(res)+'.vtk'
+        scan = scan.squeeze()
+        DW.write(scan, output_datadirpath + '/IRCAD_' +str(name) +'_' + str(res)+'_' + str(ax)+'.pklz', metadata={"voxelsize_mm": [1, 1, 1]})
+        seznam[int(name)-1] = output_datadirpath + '/IRCAD_'+str(name) +'_' + str(res)+'_' + str(ax)+'.pklz'
 
-    for folder in glob.glob(datadirpath + '/labels/*/'+organ+'/')[:2]:
+    ll = [None] * 20
+    for folder in glob.glob(datadirpath + '/labels/*/'+organ+'/'):
         count = len(glob.glob(folder+'*'))
         sez = list()
-        for image in glob.glob(folder+'IRCAD*.vtk'):
+        for image in glob.glob(folder+'IRCAD*.pklz'):
             label, _ = DR.read(image)
         if ax != 0:
             label = np.rollaxis(label, ax)
@@ -136,28 +158,53 @@ def ircad_preparation(datadirpath, output_datadirpath="output_data", organ="live
                     l.append(3)
                 else:
                     l.append(1)
+        ll[int(folder.split('/')[-3])-1] = l
         file = seznam[int(folder.split('/')[-3])-1]
-        dt = {'filename': [file,file,file], 'label':['under '+ organ, organ, 'above '+ organ],
-              'start_slice_number': [0, l.index(2), l.index(3)],
-              'stop_slice_number': [l.index(2) - 1, l.index(3) - 1, len(l)-1], 'axis': ax}
+
+        if l[-1] == 2:
+            x = len(l)
+        else:
+            x = l.index(3)
+        if l[0] == 2:
+            y = 0
+        else:
+            y = l.index(2)
+        dt = {'filename': [file, file, file], 'label': ['under ' + organ, organ, 'above ' + organ],
+              'start_slice_number': [0, y, x],
+              'stop_slice_number': [y - 1, x - 1, len(l) - 1], 'axis': ax}
+        if dt['stop_slice_number'][0] == -1:
+            dt['stop_slice_number'][0] = 0
         if os.path.exists(csvpath):
             new_df = pd.read_csv(csvpath)
             df = pd.DataFrame.from_dict(dt)
-            new_df = pd.concat([new_df, df], ignore_index = True)
+            new_df = pd.concat([new_df, df], ignore_index=True)
         else:
             df0 = pd.DataFrame.from_dict(dt)
             new_df = df0
         new_df.to_csv(csvpath, index=False)
-
-    f = h5py.File(output_datadirpath+'/IRCAD_'+str(res)+'.hdf5', 'a')
-    for i in seznam:
-        group = f.create_group(i.split('/')[-1])
-        scan, _ = DR.read(i)
+        a = y
+        b = x - y
+        c = len(l) - x
+        dt = {'filename': [file], 'under liver': [a], 'liver': [b], 'above liver': [c], 'slices': [len(l)]}
+        if os.path.exists(stat):
+            new_df = pd.read_csv(stat)
+            df = pd.DataFrame.from_dict(dt)
+            new_df = pd.concat([new_df, df], ignore_index=True)
+        else:
+            df0 = pd.DataFrame.from_dict(dt)
+            new_df = df0
+        new_df.to_csv(stat, index=False)
+    output_datadirpath + '/sliver_' + str(res) + '_' + str(ax) + '_' + organ + '.hdf5'
+    f = h5py.File(output_datadirpath+'/sliver_'+str(res)+ '_' + str(ax) + '_' + str(organ) + '.hdf5', 'a')
+    for index, file in enumerate(seznam):
+        group = f.create_group(file.split('/')[-1])
+        l = ll[index]
+        scan, _ = DR.read(file)
         for ind, slice in enumerate(scan):
             name = str(ind)
             dset = group.create_dataset(name, data=slice)
             dset.attrs['teacher'] = l[ind]
-            dset.attrs['origin file'] = i
+            dset.attrs['origin file'] = file
     f.close()
     pass
 
@@ -207,10 +254,12 @@ def main():
         help='Debug mode')
     parser.add_argument('-f', '--function', default='manual', help='manual/ircad/sliver')
     parser.add_argument('-dd', '--data_dir')
-    parser.add_argument('-od', '--output_dir')
+    parser.add_argument('-od', '--output_dir', default='output_data')
     parser.add_argument('-r', '--resolution', default=100, type=int)
     parser.add_argument('-o', '--organ', default='liver')
     parser.add_argument('-a', '--axis', default=0, type=int)
+    parser.add_argument('-bb', '--boundingbox', action='store_true')
+
     args = parser.parse_args()
 
     # test
@@ -219,11 +268,20 @@ def main():
 
     if args.debug:
         ch.setLevel(logging.DEBUG)
-    if args.function == 'ircad':
-        ircad_group(args.data_dir, organ=args.organ)
-        # ircad_preparation(args.data_dir,res=args.resolution, organ=args.organ, ax=args.axis)
-    if args.function == 'sliver':
-        sliver_preparation(args.data_dir,res = args.resolution, ax=args.axis)
+    if args.boundingbox:
+        if args.function == 'ircad':
+            ircad_group(args.data_dir, organ=args.organ)
+            for i in range(3):
+                ircad_preparation(args.data_dir, args.output_dir ,res=args.resolution, organ=args.organ, ax=i)
+        if args.function == 'sliver':
+            for i in range(3):
+                sliver_preparation(args.data_dir, args.output_dir, res=args.resolution, ax=i)
+    else:
+        if args.function == 'ircad':
+            ircad_group(args.data_dir, organ=args.organ)
+            ircad_preparation(args.data_dir, args.output_dir, res=args.resolution, organ=args.organ, ax=args.axis)
+        if args.function == 'sliver':
+            sliver_preparation(args.data_dir, args.output_dir, res=args.resolution, ax=args.axis)
 
 
 if __name__ == "__main__":
